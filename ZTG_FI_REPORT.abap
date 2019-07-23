@@ -7,7 +7,7 @@
 *&
 *&---------------------------------------------------------------------*
 
-REPORT ztg_fi_selection.
+REPORT ztg_fi_report.
 
     TYPES: BEGIN OF ty_bkpf,
          bukrs TYPE bkpf-bukrs, "Company Code
