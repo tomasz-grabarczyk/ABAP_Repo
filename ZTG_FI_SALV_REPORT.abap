@@ -3,20 +3,8 @@
 *&
 *&---------------------------------------------------------------------*
 *&
-*&  BKPF - FI document header
-*&  BSEG - FI document positions (cluster table)
-*&
-*&  selection screen
-*&  bukrs
-*&  gjahr
-*&  belnr
-*&
-*&  alv
-*&  selection screen,  4 pola losowe - data księgowania (budat), usnam itd
-*&  hotspot na belnr call transaction FB03 skip first screen
-*&  action doubleclick show popup with alv with amounts and costs
-*&  popup call screen start at ending at
-*&  FM popup
+*&  Author: Tomasz Grabarczyk
+*&  Date: 31.07.2019
 *&
 *&---------------------------------------------------------------------*
 
@@ -69,13 +57,14 @@ CLASS lcl_report DEFINITION.
   PRIVATE SECTION.
 
     METHODS:
-      set_hotspot_belnr
-        CHANGING
-          co_alv   TYPE REF TO cl_salv_table
-          co_report TYPE REF TO lcl_report.
+      set_hotspot
+        IMPORTING
+          co_alv TYPE REF TO cl_salv_table
+          co_report TYPE REF TO lcl_report
+          column_name TYPE c.
 
     METHODS:
-      belnr_hotspot_handler
+      hotspot_handler
         FOR EVENT link_click OF cl_salv_events_table
           IMPORTING
             row
@@ -85,25 +74,19 @@ CLASS lcl_report DEFINITION.
       bdcdata_dynpro
         IMPORTING
           program TYPE string
-          dynpro TYPE string.
+          dynpro  TYPE string.
 
     METHODS:
-      bdcdata_field_bukrs
+      bdcdata_field_char
         IMPORTING
           fnam TYPE string
-          fval TYPE bkpf-bukrs.
+          fval TYPE c.
 
     METHODS:
-      bdcdata_field_belnr
+      bdcdata_field_num
         IMPORTING
           fnam TYPE string
-          fval TYPE bkpf-belnr.
-
-    METHODS:
-      bdcdata_field_gjahr
-        IMPORTING
-          fnam TYPE string
-          fval TYPE bkpf-gjahr.
+          fval TYPE n.
 
 ENDCLASS.                    "LCL_REPORT DEFINITION
 
@@ -145,16 +128,23 @@ CLASS lcl_report IMPLEMENTATION.
       CATCH cx_salv_msg INTO lx_msg.
     ENDTRY.
 
-    CALL METHOD set_hotspot_belnr
-      CHANGING
-        co_alv    = o_alv
-        co_report = lo_report.
+    CALL METHOD set_hotspot
+      EXPORTING
+        co_alv      = o_alv
+        co_report   = lo_report
+        column_name = 'BELNR'.
+
+    CALL METHOD set_hotspot
+      EXPORTING
+        co_alv      = o_alv
+        co_report   = lo_report
+        column_name = 'WAERS'.
 
     o_alv->display( ).
 
   ENDMETHOD.                    "GENERATE_OUTPUT
 
-  METHOD set_hotspot_belnr.
+  METHOD set_hotspot.
 
     DATA: lo_cols_tab TYPE REF TO cl_salv_columns_table,
           lo_col_tab  TYPE REF TO cl_salv_column_table.
@@ -162,7 +152,7 @@ CLASS lcl_report IMPLEMENTATION.
     lo_cols_tab = co_alv->get_columns( ).
 
     TRY.
-        lo_col_tab ?= lo_cols_tab->get_column( 'BELNR' ).
+        lo_col_tab ?= lo_cols_tab->get_column( column_name ).
       CATCH cx_salv_not_found.
     ENDTRY.
 
@@ -177,46 +167,91 @@ CLASS lcl_report IMPLEMENTATION.
     DATA: lo_events TYPE REF TO cl_salv_events_table.
     lo_events = o_alv->get_event( ).
 
-    SET HANDLER co_report->belnr_hotspot_handler FOR lo_events.
+    SET HANDLER co_report->hotspot_handler FOR lo_events.
 
   ENDMETHOD.                    "set_hotspot_vbeln
 
-
-
-  METHOD belnr_hotspot_handler.
-
-    DATA: lv_bkpf TYPE ty_bkpf,
+  METHOD hotspot_handler.
+    DATA: lv_bkpf  TYPE ty_bkpf,
           lv_belnr TYPE ty_bkpf,
           lv_gjahr TYPE ty_bkpf.
 
-    READ TABLE: lo_report->it_bkpf INTO lv_bkpf INDEX row,
+    READ TABLE: lo_report->it_bkpf INTO lv_bkpf  INDEX row,
                 lo_report->it_bkpf INTO lv_belnr INDEX row - 1,
                 lo_report->it_bkpf INTO lv_gjahr INDEX row + 1.
 
-    IF lv_bkpf-belnr IS NOT INITIAL.
+    CASE column.
+      WHEN 'BELNR'.
+        IF lv_bkpf-belnr IS NOT INITIAL.
 
-      DATA opt TYPE ctu_params.
+          DATA opt TYPE ctu_params.
 
-      CALL METHOD bdcdata_dynpro EXPORTING program = 'SAPMF05L' dynpro = '0100'.
+          CALL METHOD bdcdata_dynpro EXPORTING program = 'SAPMF05L' dynpro = '0100'.
 
-      CALL METHOD bdcdata_field_bukrs EXPORTING fnam = 'RF05L-BUKRS' fval = lv_bkpf-bukrs.
-      CALL METHOD bdcdata_field_belnr EXPORTING fnam = 'RF05L-BELNR' fval = lv_bkpf-belnr.
-      CALL METHOD bdcdata_field_gjahr EXPORTING fnam = 'RF05L-GJAHR' fval = lv_bkpf-gjahr.
+          CALL METHOD bdcdata_field_char EXPORTING fnam = 'RF05L-BUKRS' fval = lv_bkpf-bukrs.
+          CALL METHOD bdcdata_field_char EXPORTING fnam = 'RF05L-BELNR' fval = lv_bkpf-belnr.
+          CALL METHOD bdcdata_field_num EXPORTING fnam = 'RF05L-GJAHR' fval = lv_bkpf-gjahr.
 
-      CALL METHOD bdcdata_dynpro EXPORTING program = 'RFBUEB00' dynpro = '1000'.
+          CALL METHOD bdcdata_dynpro EXPORTING program = 'RFBUEB00' dynpro = '1000'.
 
-      CALL METHOD bdcdata_field_bukrs EXPORTING fnam = 'BR_BUKRS-LOW' fval = lv_bkpf-bukrs.
-      CALL METHOD bdcdata_field_bukrs EXPORTING fnam = 'BR_BUKRS-HIGH' fval = lv_bkpf-bukrs.
-      CALL METHOD bdcdata_field_belnr EXPORTING fnam = 'BR_BELNR-LOW' fval = lv_bkpf-belnr.
-      CALL METHOD bdcdata_field_belnr EXPORTING fnam = 'BR_BELNR-HIGH' fval = lv_bkpf-belnr.
-      CALL METHOD bdcdata_field_gjahr EXPORTING fnam = 'BR_GJAHR-LOW' fval = lv_bkpf-gjahr.
-      CALL METHOD bdcdata_field_gjahr EXPORTING fnam = 'BR_GJAHR-HIGH' fval = lv_bkpf-gjahr.
+          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BUKRS-LOW' fval = lv_bkpf-bukrs.
+          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BUKRS-HIGH' fval = lv_bkpf-bukrs.
+          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BELNR-LOW' fval = lv_bkpf-belnr.
+          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BELNR-HIGH' fval = lv_bkpf-belnr.
+          CALL METHOD bdcdata_field_num EXPORTING fnam = 'BR_GJAHR-LOW' fval = lv_bkpf-gjahr.
+          CALL METHOD bdcdata_field_num EXPORTING fnam = 'BR_GJAHR-HIGH' fval = lv_bkpf-gjahr.
 
-      opt-dismode = 'A'.
+          opt-dismode = 'A'.
 
-      CALL TRANSACTION 'FB03' USING it_bdcdata OPTIONS FROM opt.
+          CALL TRANSACTION 'FB03' USING it_bdcdata OPTIONS FROM opt.
 
-    ENDIF.
+        ENDIF.
+      WHEN 'WAERS'.
+          DATA: o_popup_alv TYPE REF TO cl_salv_table.
+          DATA: lo_functions TYPE REF TO cl_salv_functions_list.
+          DATA: it_bkpf TYPE STANDARD TABLE OF ty_bkpf.
+
+          SELECT bukrs gjahr belnr shkzg wrbtr
+            FROM bseg
+            INTO CORRESPONDING FIELDS OF TABLE it_bseg
+            WHERE
+                  bukrs = lv_bkpf-bukrs AND
+                  belnr = lv_bkpf-belnr AND
+                  gjahr = lv_bkpf-gjahr AND
+                  shkzg = 'S'.
+
+*          SELECT bukrs belnr gjahr bldat cputm usnam waers
+*            FROM bkpf
+*            INTO CORRESPONDING FIELDS OF TABLE it_bkpf
+*            WHERE bukrs IN so_bukrs AND
+*                  gjahr IN so_gjahr AND
+*                  belnr IN so_belnr.
+*
+*          SELECT bukrs gjahr belnr shkzg wrbtr
+*            FROM bseg
+*            INTO CORRESPONDING FIELDS OF TABLE it_bseg
+*            FOR ALL ENTRIES IN it_bkpf
+*            WHERE belnr = it_bkpf-belnr
+*              AND shkzg = 'S'.
+
+          cl_salv_table=>factory(
+             IMPORTING
+               r_salv_table   = o_popup_alv
+            CHANGING
+              t_table        = it_bseg ).
+
+          lo_functions = o_popup_alv->get_functions( ).
+          lo_functions->set_default( 'X' ).
+
+          o_popup_alv->set_screen_popup(
+            start_column = 80
+            end_column   = 200
+            start_line   = 3
+            end_line     = 20 ).
+
+          o_popup_alv->display( ).
+
+    ENDCASE.
 
   ENDMETHOD.                    "belnr_hotspot_handler
 
@@ -228,26 +263,19 @@ CLASS lcl_report IMPLEMENTATION.
     APPEND wa_bdcdata TO it_bdcdata.
   ENDMETHOD.                    "bdcdata_dynpro
 
-  METHOD bdcdata_field_bukrs.
+  METHOD bdcdata_field_char.
     CLEAR wa_bdcdata.
     wa_bdcdata-fnam = fnam.
     wa_bdcdata-fval = fval.
     APPEND wa_bdcdata TO it_bdcdata.
-  ENDMETHOD.                    "bdcdata_field_bukrs
+  ENDMETHOD.                    "bdcdata_field_char
 
-  METHOD bdcdata_field_belnr.
+  METHOD bdcdata_field_num.
     CLEAR wa_bdcdata.
     wa_bdcdata-fnam = fnam.
     wa_bdcdata-fval = fval.
     APPEND wa_bdcdata TO it_bdcdata.
-  ENDMETHOD.                    "bdcdata_field_belnr
-
-  METHOD bdcdata_field_gjahr.
-    CLEAR wa_bdcdata.
-    wa_bdcdata-fnam = fnam.
-    wa_bdcdata-fval = fval.
-    APPEND wa_bdcdata TO it_bdcdata.
-  ENDMETHOD.                    "bdcdata_field_gjahr
+  ENDMETHOD.                    "bdcdata_field_num
 
 ENDCLASS.                   "LCL_REPORT IMPLEMENTATION
 
