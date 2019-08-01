@@ -1,8 +1,25 @@
 *&---------------------------------------------------------------------*
-*&  Report  ZTG_FI_SALV_REPORT
+*& Report  ZTG_FI_SALV_REPORT
 *&---------------------------------------------------------------------*
 *&  Author: Tomasz Grabarczyk
 *&  Date: 31.07.2019
+*&---------------------------------------------------------------------*
+*&
+*&  BKPF - FI document header
+*&  BSEG - FI document positions (cluster table)
+*&
+*&  selection screen
+*&  bukrs
+*&  gjahr
+*&  belnr
+*&
+*&  alv
+*&  selection screen,  4 pola losowe - data księgowania (budat), usnam itd
+*&  hotspot na belnr call transaction FB03 skip first screen
+*&  action doubleclick show popup with alv with amounts and costs
+*&  popup call screen start at ending at
+*&  FM popup
+*&
 *&---------------------------------------------------------------------*
 
 REPORT ztg_fi_salv_report.
@@ -41,9 +58,7 @@ CLASS lcl_report DEFINITION.
            END OF ty_bseg.
 
     DATA: it_bkpf TYPE TABLE OF ty_bkpf,
-          wa_bkpf LIKE LINE OF it_bkpf,
-          it_bseg TYPE TABLE OF ty_bseg,
-          wa_bseg LIKE LINE OF it_bseg.
+          it_bseg TYPE TABLE OF ty_bseg.
 
     DATA: o_alv TYPE REF TO cl_salv_table.
 
@@ -177,45 +192,46 @@ CLASS lcl_report IMPLEMENTATION.
                 lo_report->it_bkpf INTO lv_belnr INDEX row - 1,
                 lo_report->it_bkpf INTO lv_gjahr INDEX row + 1.
 
-    CASE column.
-      WHEN 'BELNR'.
-        IF lv_bkpf-belnr IS NOT INITIAL.
+    TRY.
+        CASE column.
+          WHEN 'BELNR'.
+            IF lv_bkpf-belnr IS NOT INITIAL.
 
-          DATA opt TYPE ctu_params.
+              DATA opt TYPE ctu_params.
 
-          CALL METHOD bdcdata_dynpro EXPORTING program = 'SAPMF05L' dynpro = '0100'.
+              CALL METHOD bdcdata_dynpro EXPORTING program = 'SAPMF05L' dynpro = '0100'.
 
-          CALL METHOD bdcdata_field_char EXPORTING fnam = 'RF05L-BUKRS' fval = lv_bkpf-bukrs.
-          CALL METHOD bdcdata_field_char EXPORTING fnam = 'RF05L-BELNR' fval = lv_bkpf-belnr.
-          CALL METHOD bdcdata_field_num EXPORTING fnam = 'RF05L-GJAHR' fval = lv_bkpf-gjahr.
+              CALL METHOD bdcdata_field_char EXPORTING fnam = 'RF05L-BUKRS' fval = lv_bkpf-bukrs.
+              CALL METHOD bdcdata_field_char EXPORTING fnam = 'RF05L-BELNR' fval = lv_bkpf-belnr.
+              CALL METHOD bdcdata_field_num EXPORTING fnam = 'RF05L-GJAHR' fval = lv_bkpf-gjahr.
 
-          CALL METHOD bdcdata_dynpro EXPORTING program = 'RFBUEB00' dynpro = '1000'.
+              CALL METHOD bdcdata_dynpro EXPORTING program = 'RFBUEB00' dynpro = '1000'.
 
-          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BUKRS-LOW' fval = lv_bkpf-bukrs.
-          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BUKRS-HIGH' fval = lv_bkpf-bukrs.
-          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BELNR-LOW' fval = lv_bkpf-belnr.
-          CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BELNR-HIGH' fval = lv_bkpf-belnr.
-          CALL METHOD bdcdata_field_num EXPORTING fnam = 'BR_GJAHR-LOW' fval = lv_bkpf-gjahr.
-          CALL METHOD bdcdata_field_num EXPORTING fnam = 'BR_GJAHR-HIGH' fval = lv_bkpf-gjahr.
+              CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BUKRS-LOW' fval = lv_bkpf-bukrs.
+              CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BUKRS-HIGH' fval = lv_bkpf-bukrs.
+              CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BELNR-LOW' fval = lv_bkpf-belnr.
+              CALL METHOD bdcdata_field_char EXPORTING fnam = 'BR_BELNR-HIGH' fval = lv_bkpf-belnr.
+              CALL METHOD bdcdata_field_num EXPORTING fnam = 'BR_GJAHR-LOW' fval = lv_bkpf-gjahr.
+              CALL METHOD bdcdata_field_num EXPORTING fnam = 'BR_GJAHR-HIGH' fval = lv_bkpf-gjahr.
 
-          opt-dismode = 'A'.
+              opt-dismode = 'A'.
 
-          CALL TRANSACTION 'FB03' USING it_bdcdata OPTIONS FROM opt.
+              CALL TRANSACTION 'FB03' USING it_bdcdata OPTIONS FROM opt.
 
-        ENDIF.
-      WHEN 'WAERS'.
-          DATA: o_popup_alv TYPE REF TO cl_salv_table.
-          DATA: lo_functions TYPE REF TO cl_salv_functions_list.
-          DATA: it_bkpf TYPE STANDARD TABLE OF ty_bkpf.
+            ENDIF.
+          WHEN 'WAERS'.
+            DATA: o_popup_alv TYPE REF TO cl_salv_table.
+            DATA: lo_functions TYPE REF TO cl_salv_functions_list.
+            DATA: it_bkpf TYPE STANDARD TABLE OF ty_bkpf.
 
-          SELECT bukrs gjahr belnr shkzg wrbtr
-            FROM bseg
-            INTO CORRESPONDING FIELDS OF TABLE it_bseg
-            WHERE
-                  bukrs = lv_bkpf-bukrs AND
-                  belnr = lv_bkpf-belnr AND
-                  gjahr = lv_bkpf-gjahr AND
-                  shkzg = 'S'.
+            SELECT bukrs gjahr belnr shkzg wrbtr
+              FROM bseg
+              INTO CORRESPONDING FIELDS OF TABLE it_bseg
+              WHERE
+                    bukrs = lv_bkpf-bukrs AND
+                    belnr = lv_bkpf-belnr AND
+                    gjahr = lv_bkpf-gjahr AND
+                    shkzg = 'S'.
 
 *          SELECT bukrs belnr gjahr bldat cputm usnam waers
 *            FROM bkpf
@@ -231,24 +247,26 @@ CLASS lcl_report IMPLEMENTATION.
 *            WHERE belnr = it_bkpf-belnr
 *              AND shkzg = 'S'.
 
-          cl_salv_table=>factory(
-             IMPORTING
-               r_salv_table   = o_popup_alv
-            CHANGING
-              t_table        = it_bseg ).
+            cl_salv_table=>factory(
+               IMPORTING
+                 r_salv_table   = o_popup_alv
+              CHANGING
+                t_table        = it_bseg ).
 
-          lo_functions = o_popup_alv->get_functions( ).
-          lo_functions->set_default( 'X' ).
+            lo_functions = o_popup_alv->get_functions( ).
+            lo_functions->set_default( 'X' ).
 
-          o_popup_alv->set_screen_popup(
-            start_column = 80
-            end_column   = 200
-            start_line   = 3
-            end_line     = 20 ).
+            o_popup_alv->set_screen_popup(
+              start_column = 80
+              end_column   = 200
+              start_line   = 3
+              end_line     = 20 ).
 
-          o_popup_alv->display( ).
+            o_popup_alv->display( ).
 
-    ENDCASE.
+        ENDCASE.
+      CATCH cx_salv_msg.
+    ENDTRY.
 
   ENDMETHOD.                    "belnr_hotspot_handler
 
