@@ -4,23 +4,6 @@
 *&  Author: Tomasz Grabarczyk
 *&  Date: 31.07.2019
 *&---------------------------------------------------------------------*
-*&
-*&  BKPF - FI document header
-*&  BSEG - FI document positions (cluster table)
-*&
-*&  selection screen
-*&  bukrs
-*&  gjahr
-*&  belnr
-*&
-*&  alv
-*&  selection screen,  4 pola losowe - data księgowania (budat), usnam itd
-*&  hotspot na belnr call transaction FB03 skip first screen
-*&  action doubleclick show popup with alv with amounts and costs
-*&  popup call screen start at ending at
-*&  FM popup
-*&
-*&---------------------------------------------------------------------*
 
 REPORT ztg_fi_salv_report.
 
