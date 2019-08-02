@@ -57,15 +57,6 @@ CLASS lcl_report DEFINITION.
              wrbtr TYPE bseg-wrbtr, "Amount in document currency
            END OF ty_bseg.
 
-    TYPES: BEGIN OF ty_final,
-             bukrs TYPE bkpf-bukrs, "Company Code
-             belnr TYPE bkpf-belnr, "Accounting Document Number
-             gjahr TYPE bkpf-gjahr, "Fiscal Year
-             bldat TYPE bkpf-bldat, "Document Date in Document
-             waers TYPE bkpf-waers, "Currency Key
-             wrbtr TYPE bseg-wrbtr, "Amount in document currency
-           END OF ty_final.
-
     DATA: it_bkpf TYPE TABLE OF ty_bkpf,
           it_bseg TYPE TABLE OF ty_bseg,
           it_final TYPE TABLE OF ty_final.
@@ -102,19 +93,7 @@ CLASS lcl_report DEFINITION.
       bdcdata_field
         IMPORTING
           fnam TYPE string
-          fval TYPE clike.
-
-*    METHODS:
-*      bdcdata_field_char
-*        IMPORTING
-*          fnam TYPE string
-*          fval TYPE c.
-*
-*    METHODS:
-*      bdcdata_field_num
-*        IMPORTING
-*          fnam TYPE string
-*          fval TYPE n.
+          fval TYPE string.
 
 ENDCLASS.                    "LCL_REPORT DEFINITION
 
@@ -217,18 +196,18 @@ CLASS lcl_report IMPLEMENTATION.
 
               CALL METHOD bdcdata_dynpro EXPORTING program = 'SAPMF05L' dynpro = '0100'.
 
-              CALL METHOD bdcdata_field EXPORTING fnam = 'RF05L-BUKRS' fval = lv_bkpf-bukrs.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'RF05L-BELNR' fval = lv_bkpf-belnr.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'RF05L-GJAHR' fval = lv_bkpf-gjahr.
+              CALL METHOD bdcdata_field EXPORTING fnam = 'RF05L-BUKRS' fval = CONV #( lv_bkpf-bukrs ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'RF05L-BELNR' fval = CONV #( lv_bkpf-belnr ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'RF05L-GJAHR' fval = CONV #( lv_bkpf-gjahr ).
 
               CALL METHOD bdcdata_dynpro EXPORTING program = 'RFBUEB00' dynpro = '1000'.
 
-              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BUKRS-LOW' fval = lv_bkpf-bukrs.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BUKRS-HIGH' fval = lv_bkpf-bukrs.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BELNR-LOW' fval = lv_bkpf-belnr.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BELNR-HIGH' fval = lv_bkpf-belnr.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_GJAHR-LOW' fval = lv_bkpf-gjahr.
-              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_GJAHR-HIGH' fval = lv_bkpf-gjahr.
+              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BUKRS-LOW' fval = CONV #( lv_bkpf-bukrs ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BUKRS-HIGH' fval = CONV #( lv_bkpf-bukrs ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BELNR-LOW' fval = CONV #( lv_bkpf-belnr ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_BELNR-HIGH' fval = CONV #( lv_bkpf-belnr ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_GJAHR-LOW' fval = CONV #( lv_bkpf-gjahr ).
+              CALL METHOD bdcdata_field EXPORTING fnam = 'BR_GJAHR-HIGH' fval = CONV #( lv_bkpf-gjahr ).
 
               opt-dismode = 'A'.
 
@@ -252,27 +231,6 @@ CLASS lcl_report IMPLEMENTATION.
                  r_salv_table   = o_popup_alv
               CHANGING
                 t_table        = it_bseg ).
-
-
-*          SELECT bukrs belnr gjahr bldat cputm usnam waers
-*            FROM bkpf
-*            INTO CORRESPONDING FIELDS OF TABLE it_final
-*            WHERE bukrs = lv_bkpf-bukrs AND
-*                  belnr = lv_bkpf-belnr AND
-*                  gjahr = lv_bkpf-gjahr.
-*
-*          SELECT bukrs gjahr belnr shkzg wrbtr
-*            FROM bseg
-*            INTO CORRESPONDING FIELDS OF TABLE it_bseg
-*            FOR ALL ENTRIES IN it_final
-*            WHERE belnr = it_final-belnr
-*              AND shkzg = 'S'.
-*
-*            cl_salv_table=>factory(
-*               IMPORTING
-*                 r_salv_table   = o_popup_alv
-*              CHANGING
-*                t_table        = it_final ).
 
             lo_functions = o_popup_alv->get_functions( ).
             lo_functions->set_default( 'X' ).
@@ -305,20 +263,6 @@ CLASS lcl_report IMPLEMENTATION.
     wa_bdcdata-fval = fval.
     APPEND wa_bdcdata TO it_bdcdata.
   ENDMETHOD.                    "bdcdata_field
-
-*  METHOD bdcdata_field_char.
-*    CLEAR wa_bdcdata.
-*    wa_bdcdata-fnam = fnam.
-*    wa_bdcdata-fval = fval.
-*    APPEND wa_bdcdata TO it_bdcdata.
-*  ENDMETHOD.                    "bdcdata_field_char
-*
-*  METHOD bdcdata_field_num.
-*    CLEAR wa_bdcdata.
-*    wa_bdcdata-fnam = fnam.
-*    wa_bdcdata-fval = fval.
-*    APPEND wa_bdcdata TO it_bdcdata.
-*  ENDMETHOD.                    "bdcdata_field_num
 
 ENDCLASS.                   "LCL_REPORT IMPLEMENTATION
 
