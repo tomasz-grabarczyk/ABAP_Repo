@@ -1,0 +1,76 @@
+Transaction: SMARTFORMS
+
+---------------------------------
+
+ZTG_SMARTFORM		
+	Global Settings	
+		Form Interface
+			Import
+				BARCODE_NUMBER	TYPE	CHAR50
+				ADDRESS_TO_NAME	TYPE	KNA1-NAME1
+				ADDRESS_TO_STREET	TYPE	KNA1-STRAS
+				ADDRESS_TO_POST_CODE	TYPE	KNA1-PSTLZ
+				ADDRESS_TO_COUNTRY	TYPE	KNA1-ORT01
+				FOOTER	TYPE	CHAR100
+				VBELN	TYPE	VBAP-VBELN
+				POSNR_LOW	TYPE	VBAP-POSNR
+				POSNR_HIGH	TYPE	VBAP-POSNR
+		Global Definitions
+			Global Data
+				IT_MATERIAL	TYPE	ZTG_MATERIAL_TABLE
+			Field Symbols
+				<FS_MATERIAL>	TYPE	ZTG_MATERIAL
+			Inicialization
+				Input Parameters
+					IT_MATERIAL
+					VBELN
+					POSNR_LOW
+					POSNR_HIGH
+				Query
+					SELECT k~vbeln k~netwr p~posnr p~matnr p~arktx
+  						FROM vbak AS k
+  						INNER JOIN vbap AS p
+  						ON k~vbeln = p~vbeln
+  						INTO CORRESPONDING FIELDS OF TABLE it_material
+  						WHERE k~vbeln EQ vbeln AND
+        						p~posnr BETWEEN posnr_low and posnr_high.
+	Pages and Windows
+		LOGO
+		CREATED_BY
+			P2	 	Created by: &sy-uname&
+			P2	 	Date: &sy-datum&
+		ADDRESS_FROM
+			RB	 	SENDER:
+			P2	 	Tomasz Grabarczyk
+			P2	 	,,,,,,Imaginary St 10
+			P2	 	,,,,,,00-1337 Duckburg 
+			P2		Polska
+		FOOTER
+			P3	 	&footer&
+		ADDRESS_TO
+			LB	 	RECIPIENT:
+			P1	 	&address_to_name&
+			P1	 	&address_to_street&
+			P1	 	&address_to_post_code&
+			P1	 	&address_to_country&
+		HEADER
+			P1	 	Barcode: <BC>&BARCODE_NUMBER&</>
+			SP	 	         &BARCODE_NUMBER&
+		MAIN
+			LOOP1
+				Data
+					Internal Table IT_MATERIAL ASSIGNING <FS_MATERIAL>
+			  TEMPLATE1
+				50x200
+			    TEXT1
+			    	*	 	                                                                        
+			    	/	 	                                                                        
+			    	/	 	,,Sales Document: ,,,,&<fs_material>-vbeln&
+			    	/	 	                                                                        
+			    	/	 	,,Sales Document Item: ,,&<fs_material>-posnr&
+			    	/	 	                                                                        
+			    	/	 	,,Material Number: ,,,,&<fs_material>-matnr&
+			    	/	 	                                                                        
+			    	/	 	,,Net value:  &<fs_material>-netwr&
+			    	/	 	                                                                        
+			    	/	 	,,Sales order item: ,,,,&<fs_material>-arktx&
