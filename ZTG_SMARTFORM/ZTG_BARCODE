@@ -1,0 +1,25 @@
+Transaction: SMARTSTYLES
+
+----------------------------
+
+	Header Data
+		Standard Settings
+			P1
+			Characters per Inch: 10,00
+			Lines per Inch: 6,00         
+			Font: COURIER
+			Font Size: 12,0
+	Paragraph Formats
+		LB - Left-aligned / COURIER / Bold 
+		P1 - Left-aligned / COURIER
+		P2 - Right-aligned / COURIER
+		P3 - Centered / COURIER / 10
+		RB - Right-aligned / COURIER / Bold
+		SP - Left-aligned / COURIER / 10
+	Character Formats
+		BC
+			Standard Settings
+				Bar Code
+					Name: TG_BARCODE
+			Font
+				COURIER
